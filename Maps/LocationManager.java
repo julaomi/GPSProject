@@ -10,12 +10,13 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.widget.Toast;
 
-import com.example.tadje.gpsproject.MapsFragment;
 import com.example.tadje.gpsproject.Persistence.AppDatabase;
+import com.example.tadje.gpsproject.R;
 import com.example.tadje.gpsproject.TripManager;
 import com.example.tadje.gpsproject.model.Locations;
 import com.example.tadje.gpsproject.model.Trip;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static android.content.Context.LOCATION_SERVICE;
@@ -33,7 +34,7 @@ public class LocationManager implements LocationListener {
     private boolean isGPSEnabled = false;
     private boolean isNetworkEnabled = false;
     private boolean canGetLocation = false;
-    Location location;
+    private Location location;
     private double latitude;
     private double longitude;
     private double speed;
@@ -42,8 +43,8 @@ public class LocationManager implements LocationListener {
     // The minimum time beetwen updates in milliseconds
     private static final long MIN_TIME_BW_UPDATES = 1000 * 5;
     private android.location.LocationManager locationManager;
-    private boolean gps;
-    private LocationChangedListener listener;
+    private List<LocationChangedListener> listeners = new ArrayList<>();
+
 
     public LocationManager() {
     }
@@ -57,7 +58,7 @@ public class LocationManager implements LocationListener {
         return instance;
     }
 
-
+    // initialize for get the locations
     public android.location.Location locationInitialize(Context context) {
 
         mContext = context;
@@ -78,7 +79,6 @@ public class LocationManager implements LocationListener {
 
     public void checkForPermissions() {
 
-
         if (isGPSEnabled || isNetworkEnabled) {
 
             this.canGetLocation = true;
@@ -91,8 +91,8 @@ public class LocationManager implements LocationListener {
 /*
                 String provider = isGPSEnabled ? android.location.LocationManager.GPS_PROVIDER :
                         android.location.LocationManager.NETWORK_PROVIDER;
-
-                locationManager.requestLocationUpdates(provider, 0, 0, this);
+                locationManager.requestLocationUpdates(provider, MIN_TIME_BW_UPDATES,
+                MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
 */
                 locationManager.requestLocationUpdates(android.location.LocationManager
                                 .GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES,
@@ -101,28 +101,29 @@ public class LocationManager implements LocationListener {
                                 .NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES,
                         this);
 
-                lastLocationFromProvider(android.location.LocationManager.NETWORK_PROVIDER);
+                lastLocationFromProvider();
             }
         }
     }
 
 
     @SuppressLint("MissingPermission")
-    private void lastLocationFromProvider(String provider) {
+    private void lastLocationFromProvider() {
 
         if (locationManager != null) {
             location = locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);
-            if (location == null){
+
+            if (location == null) {
                 location = locationManager.getLastKnownLocation(android.location.LocationManager
                         .NETWORK_PROVIDER);
             }
-
 
             initializeLocationVariablen(location);
         }
     }
 
     public void initializeLocationVariablen(Location location) {
+
         if (location != null) {
             latitude = location.getLatitude();
             longitude = location.getLongitude();
@@ -135,10 +136,12 @@ public class LocationManager implements LocationListener {
 
     private void putLocationToDatabase() {
 
+        int tripNumb;
         List<Trip> trips = AppDatabase.getInstance().tripDao().getAll();
 
         if (trips.size() != 0) {
-            int tripNumb = TripManager.getInstance().getTripNumber();
+
+            tripNumb = TripManager.getInstance().getTripNumber();
             Locations location = new Locations(tripNumb, latitude, longitude, speed);
             AppDatabase.getInstance().locationsDao().insertAll(location);
         }
@@ -147,12 +150,13 @@ public class LocationManager implements LocationListener {
 
     //Speed from milliseconds to km/h
     private double calculateSpeedInKMHour(Location location) {
+
         double speedKMHour = ((location.getSpeed()) * 3600) / 1000;
 
         return speedKMHour;
     }
 
-
+    //stop the location updates
     @SuppressLint("NewApi")
     public void stopUsingGPS() {
         if (locationManager != null) {
@@ -167,19 +171,17 @@ public class LocationManager implements LocationListener {
         }
     }
 
+    // if an automatic location update happends then start the methode
+    // initializeLocationVariablen with the new location and notifyLocationChangedListener
     @Override
     public void onLocationChanged(Location location) {
+
         initializeLocationVariablen(location);
-        Toast.makeText(mContext, "New Location", Toast.LENGTH_LONG).show();
+        Toast.makeText(mContext, mContext.getString(R.string.newLocation), Toast.LENGTH_LONG)
+                .show();
 
-        LocationManager locationManager = new LocationManager();
+        notifyLocationChangedListener(location);
 
-        locationManager.setLocationChangedListener(new LocationChangedListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                listener.onLocationChanged(location);
-                }
-        });
     }
 
     @Override
@@ -195,7 +197,25 @@ public class LocationManager implements LocationListener {
     public void onProviderEnabled(String provider) {
     }
 
-    public void setLocationChangedListener(LocationChangedListener listener){
-        this.listener = listener;
+    //register Listener to the listener List
+    public void registerLocationChangedListener(LocationChangedListener locationChangedListener) {
+        if (!listeners.contains(locationChangedListener)) {
+            listeners.add(locationChangedListener);
+        }
+    }
+
+    //remove the listener from the listener list
+    public void unregisterLocationChangedListener(LocationChangedListener
+                                                         locationChangedListener) {
+        if (listeners.contains(locationChangedListener)) {
+            listeners.remove(locationChangedListener);
+        }
+    }
+
+    //inform the registered listener about the new location
+    public void notifyLocationChangedListener(Location location) {
+        for (LocationChangedListener listener : listeners) {
+            listener.onLocationChanged(location);
+        }
     }
 }

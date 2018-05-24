@@ -18,6 +18,9 @@ public interface LocationsDao {
     @Query("SELECT * FROM locations")
     List<Locations> getAll();
 
+    @Query("SELECT * FROM locations WHERE tripFK IN (:tripNumber)")
+    List<Locations> getAllByTripNumber(int tripNumber);
+
     @Query("SELECT * FROM locations WHERE id IN (:Ids)")
     List<Locations> loadAllByIds(int[] Ids);
 

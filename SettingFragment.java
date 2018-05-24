@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 @SuppressLint("ValidFragment")
 public class SettingFragment extends Fragment {
+
     public String title;
     public int page;
 

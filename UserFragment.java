@@ -129,9 +129,9 @@ public class UserFragment extends Fragment {
         birthdayUser = dialogViewUser.findViewById(R.id.userBirthday);
 
 
-        addUserDialog.setTitle("add User");
+        addUserDialog.setTitle(getString(R.string.addUser));
 
-        addUserDialog.setPositiveButton(("User hinzufügen"), new DialogInterface
+        addUserDialog.setPositiveButton((getString(R.string.addUser)), new DialogInterface
                         .OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
@@ -140,7 +140,7 @@ public class UserFragment extends Fragment {
                 }
         );
 
-        addUserDialog.setNegativeButton("cancel", null);
+        addUserDialog.setNegativeButton(getString(R.string.cancel), null);
         AlertDialog alertDialogEmp = addUserDialog.create();
         alertDialogEmp.show();
     }
@@ -162,7 +162,7 @@ public class UserFragment extends Fragment {
                 || (TextUtils.isEmpty(firstnameUser.getText()))
                 || (TextUtils.isEmpty(birthdayUser.getText()))) {
 
-            Toast.makeText(getActivity(), ("Bitte füllen Sie alle Felder aus!"), Toast.LENGTH_LONG)
+            Toast.makeText(getActivity(), (getString(R.string.fillFields)), Toast.LENGTH_LONG)
                     .show();
 
         }

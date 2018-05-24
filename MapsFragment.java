@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -17,7 +16,6 @@ import com.example.tadje.gpsproject.Persistence.AppDatabase;
 import com.example.tadje.gpsproject.model.Locations;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -37,10 +35,11 @@ import static com.example.tadje.gpsproject.R.id.mapView;
 
 
 @SuppressLint("ValidFragment")
-public class MapsFragment extends Fragment implements OnMapReadyCallback, LocationSource.OnLocationChangedListener {
+public class MapsFragment extends Fragment implements OnMapReadyCallback, LocationChangedListener {
+
 
     private MapView viewMap;
-    public GoogleMap mMap;
+    private GoogleMap mMap;
     private List<Locations> locations;
     private double latitudefrom;
     private double latitudeto;
@@ -49,8 +48,6 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
     private double speedto;
     private double speed;
     private double speedKMHour;
-
-    Location location;
 
 
 
@@ -72,13 +69,22 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
     }
 
 
+    //Registration in the listener List
     @Override
     public void onResume() {
-        viewMap.onResume();
         super.onResume();
+        viewMap.onResume();
+        LocationManager.getInstance().registerLocationChangedListener(this);
     }
 
+    //unregistration in the listener List
+    @Override
+    public void onPause() {
+        super.onPause();
+        LocationManager.getInstance().unregisterLocationChangedListener(this);
+    }
 
+    //set a Marker in the map and move with the camera to this place
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -87,50 +93,29 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
         GroundOverlayOptions ckcpio = new GroundOverlayOptions().image(BitmapDescriptorFactory
                 .fromResource(R.drawable.ckc_group)).position(ckc, 80f, 60f);
         mMap.addGroundOverlay(ckcpio);
-        mMap.addMarker(new MarkerOptions().position(ckc).title("ckc Group Braunschweig"));
+        mMap.addMarker(new MarkerOptions().position(ckc).title(getString(R.string.ckc)));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(ckc));
         mMap.animateCamera(CameraUpdateFactory.zoomTo(16));
     }
 
 
-
+    //if the listener calls a new location then create the polylines
     @Override
     public void onLocationChanged(Location location) {
-            checkSpeedFromLocationsForPolylines();
+            checkIfLocationsExistsForPolylines();
     }
 
 
 
-
-
-
-
-    public interface OnFragmentInteractionListener {
+    interface OnFragmentInteractionListener {
     }
 
-    public void setmMap(GoogleMap mMap) {
-        this.mMap = mMap;
-    }
 
-    public GoogleMap getmMap() {
-        return mMap;
-    }
+    //check if locations exists on a trip for polylines
+    private void checkIfLocationsExistsForPolylines() {
 
-//    final Handler handler = new Handler();
-//    Runnable runnable = new Runnable() {
-//        @Override
-//        public void run() {
-//            checkSpeedFromLocationsForPolylines();
-//            handler.postDelayed(runnable, 1000);
-//        }
-//
-//    };
-
-
-
-    public void checkSpeedFromLocationsForPolylines() {
-
-        locations = AppDatabase.getInstance().locationsDao().getAll();
+        int tripNumber = TripManager.getInstance().getTripNumber();
+        locations = AppDatabase.getInstance().locationsDao().getAllByTripNumber(tripNumber);
 
         if (locations.size() != 0 || locations.size() != 1) {
             createPolylinesBetweenToPoints();
@@ -138,10 +123,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
     }
 
 
-
-    //Create polylines
-    public void createPolylinesBetweenToPoints() {
-
+    //Create polylines from the list of locations on a trip
+    private void createPolylinesBetweenToPoints() {
 
         for (int i = 0; i <= (locations.size() - 2); i++) {
             int nextposition = i + 1;
@@ -156,6 +139,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
             longitudeto = locations.get(nextposition).getLongitude();
             speedto = locations.get(nextposition).getSpeed();
 
+
             int polycolor = polylineColor(speedto);
 
             Polyline polyline = mMap.addPolyline(new PolylineOptions()
@@ -169,10 +153,9 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
 
             polyline.setTag("");
         }
-        setmMap(mMap);
     }
 
-
+    //set a timer for 10 minutes if speed is 0km/h, if the speed over 0 km/h clear the timer
     private void afterTenMinutesStopRecordingLocations() {
         Timer timer = new Timer();
         if (speedKMHour == 0.0) {

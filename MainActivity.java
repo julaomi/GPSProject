@@ -28,7 +28,6 @@ import com.example.tadje.gpsproject.model.Trip;
 import com.example.tadje.gpsproject.model.User;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.maps.LocationSource;
 
 import java.util.List;
 
@@ -50,50 +49,48 @@ public class MainActivity extends AppCompatActivity implements MapsFragment
     /**
      * The {@link ViewPager} that will host the section contents.
      */
+
     private ViewPager mViewPager;
-    private android.location.LocationManager locationManager;
-    private int PERMISSION_REQUEST_CODE = 1;
     private boolean LocationAvailable = false;
     boolean buttonStartStop = false;
-    Location location;
-    FloatingActionButton positionButton;
-    int tripNumber;
+    private Location location;
+    private FloatingActionButton positionButton;
+    private int tripNumber;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
         Context context = this;
         AppDatabase.getInstance(context);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mViewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager());
 
-
         // Set up the ViewPager with the sections adapter.
         mViewPager = findViewById(R.id.container);
         mViewPager.setAdapter(mViewPagerAdapter);
-
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
-
+        TabLayout tabLayout = findViewById(R.id.tabs);
         mViewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         tabLayout.addOnTabSelectedListener(new TabLayout.ViewPagerOnTabSelectedListener(mViewPager));
+
 
         TripManager.getInstance().setSelectedUserID(1);
         TripManager.getInstance().setTripNumber(1);
 
         if (checkPermission()) {
             location = LocationManager.getInstance().locationInitialize(context);
-            speedOver5kmh(location);
+            startTripIfLocationHaveSpeed(location);
         }
 
         positionButton = findViewById(R.id.positionButton);
-
         positionButton.setOnClickListener((new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -107,22 +104,21 @@ public class MainActivity extends AppCompatActivity implements MapsFragment
     //Button start and stop
     private void startOrStopOnButtonClick() {
 
-        if (buttonStartStop == false) {
+        if (!buttonStartStop) {
             buttonStartStop = true;
-            Toast.makeText(this, "" +
-                    "Trip is started", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.startTrip), Toast.LENGTH_LONG).show();
             startNewTrip();
 
 
         } else {
             buttonStartStop = false;
-            Toast.makeText(this, "" +
-                    "Trip is stopped", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.stopTrip), Toast.LENGTH_LONG).show();
             LocationManager.getInstance().stopUsingGPS();
         }
     }
 
-    private void speedOver5kmh(Location location) {
+
+    private void startTripIfLocationHaveSpeed(Location location) {
         this.location = location;
 
         if (location != null) {
@@ -137,33 +133,41 @@ public class MainActivity extends AppCompatActivity implements MapsFragment
 
     private void startNewTrip() {
 
-        List<Trip> tripList = AppDatabase.getInstance().tripDao().getAll();
-
-        if (tripList.size() != 0) {
-            tripNumber = TripManager.getInstance().getTripNumber();
-        } else {
-            tripNumber = 1;
-            TripManager.getInstance().setTripNumber(tripNumber);
-        }
-
-        List<User> userExists = AppDatabase.getInstance().userDao().getAll();
-
+        List<Trip> existTripList = AppDatabase.getInstance().tripDao().getAll();
+        List<User> existUserList = AppDatabase.getInstance().userDao().getAll();
         Trip trip;
 
-        if (userExists.size() != 0) {
+        if (existTripList.size() != 0) {
+
+            tripNumber = TripManager.getInstance().getTripNumber();
+            TripManager.getInstance().setTripNumber(tripNumber + 1);
+
+        } else {
+            //Add tripNumber by first time open
+            tripNumber = 1;
+            TripManager.getInstance().setTripNumber(tripNumber);
+
+        }
+
+
+        if (existUserList.size() != 0) {
+
             int userID = TripManager.getInstance().getSelectedUserID();
             trip = new Trip(tripNumber, userID);
 
         } else {
+
+            //Add a user by first time open
             User user = new User("Test", "User", "05.03.2018");
             AppDatabase.getInstance().userDao().insertAll(user);
             trip = new Trip(tripNumber, user.getId());
         }
 
+        //Add a new trip to the database
         AppDatabase.getInstance().tripDao().insertAll(trip);
 
+        // Go in the Location Manager to get a location and fill the location in the database
         LocationManager.getInstance().locationInitialize(this);
-
     }
 
 
@@ -176,8 +180,6 @@ public class MainActivity extends AppCompatActivity implements MapsFragment
             LocationAvailable = false;
             return false;
         }
-
-
     }
 
 
