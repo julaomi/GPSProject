@@ -62,7 +62,7 @@ import java.util.TimerTask;
 //            timer.scheduleAtFixedRate(new TimerTask() {
 //                @Override
 //                public void run() {
-//                    LocationManager.getInstance().stopUsingGPS();
+//                    MyLocationManager.getInstance().stopUsingGPS();
 //                }
 //            }, 0, 600000);
 //        } else {

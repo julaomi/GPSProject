@@ -20,6 +20,7 @@ public class SettingFragment extends Fragment {
     public String title;
     public int page;
 
+
     public static SettingFragment newInstance(int page, String title) {
 
         SettingFragment settingFragment = new SettingFragment();
@@ -36,9 +37,7 @@ public class SettingFragment extends Fragment {
         super.onCreate(savedInstanceState);
         page = getArguments().getInt("someInt", 2);
         title = getArguments().getString("someTitle");
-        FloatingActionButton floatingActionButton = this.getActivity().findViewById(R.id
-                .positionButton);
-        floatingActionButton.setVisibility(View.INVISIBLE);
+
     }
 
     // Inflate the view for the fragment based on layout XML
@@ -46,7 +45,13 @@ public class SettingFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.settings_fragment, container, false);
+
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
     }
 
     public interface OnFragmentInteractionListener {

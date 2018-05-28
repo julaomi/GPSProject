@@ -10,8 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.example.tadje.gpsproject.Maps.LocationChangedListener;
-import com.example.tadje.gpsproject.Maps.LocationManager;
+import com.example.tadje.gpsproject.Maps.ILocationChangedListener;
+import com.example.tadje.gpsproject.Maps.MyLocationManager;
 import com.example.tadje.gpsproject.Persistence.AppDatabase;
 import com.example.tadje.gpsproject.model.Locations;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -27,68 +27,76 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static android.view.View.*;
 import static com.example.tadje.gpsproject.R.id.mapView;
 
 
 @SuppressLint("ValidFragment")
-public class MapsFragment extends Fragment implements OnMapReadyCallback, LocationChangedListener {
+public class MapsFragment extends Fragment implements OnMapReadyCallback, ILocationChangedListener {
 
 
     private MapView viewMap;
     private GoogleMap mMap;
     private List<Locations> locations;
-    private double latitudefrom;
-    private double latitudeto;
-    private double longitudefrom;
-    private double longitudeto;
-    private double speedto;
+    private double latitudeFrom;
+    private double latitudeTo;
+    private double longitudeFrom;
+    private double longitudeTo;
+    private double speedTo;
     private double speed;
     private double speedKMHour;
-
+    Polyline polyline;
+    List<Polyline> polylineList;
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle
             savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_maps, container, false);
-
+       // floatingActionButton = this.getActivity().findViewById(R.id
+       //         .positionButton);
         viewMap = view.findViewById(mapView);
         viewMap.onCreate(savedInstanceState);
         MapsInitializer.initialize(this.getActivity());
         viewMap.getMapAsync(this);
 
-        FloatingActionButton floatingActionButton = this.getActivity().findViewById(R.id
-                .positionButton);
-        floatingActionButton.setVisibility(View.VISIBLE);
 
         return view;
     }
 
+    public void onStart() {
+        super.onStart();
+        if (mMap != null){
+            mMap.clear();
+        }
+    }
 
     //Registration in the listener List
     @Override
     public void onResume() {
         super.onResume();
         viewMap.onResume();
-        LocationManager.getInstance().registerLocationChangedListener(this);
-    }
+        MyLocationManager.getInstance().registerLocationChangedListener(this);
+
+        }
 
     //unregistration in the listener List
     @Override
     public void onPause() {
         super.onPause();
-        LocationManager.getInstance().unregisterLocationChangedListener(this);
+        MyLocationManager.getInstance().unregisterLocationChangedListener(this);
     }
 
     //set a Marker in the map and move with the camera to this place
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
 
+        mMap = googleMap;
         LatLng ckc = new LatLng(52.251823, 10.515543);
         GroundOverlayOptions ckcpio = new GroundOverlayOptions().image(BitmapDescriptorFactory
                 .fromResource(R.drawable.ckc_group)).position(ckc, 80f, 60f);
@@ -102,9 +110,9 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
     //if the listener calls a new location then create the polylines
     @Override
     public void onLocationChanged(Location location) {
-            checkIfLocationsExistsForPolylines();
-    }
+        checkIfLocationsExistsForPolylines();
 
+    }
 
 
     interface OnFragmentInteractionListener {
@@ -116,6 +124,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
 
         int tripNumber = TripManager.getInstance().getTripNumber();
         locations = AppDatabase.getInstance().locationsDao().getAllByTripNumber(tripNumber);
+
 
         if (locations.size() != 0 || locations.size() != 1) {
             createPolylinesBetweenToPoints();
@@ -133,24 +142,26 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
             speedKMHour = ((locations.get(i).getSpeed()) * 3600) / 1000;
             afterTenMinutesStopRecordingLocations();
 
-            latitudefrom = locations.get(i).getLatitude();
-            latitudeto = locations.get(nextposition).getLatitude();
-            longitudefrom = locations.get(i).getLongitude();
-            longitudeto = locations.get(nextposition).getLongitude();
-            speedto = locations.get(nextposition).getSpeed();
+            latitudeFrom = locations.get(i).getLatitude();
+            latitudeTo = locations.get(nextposition).getLatitude();
+            longitudeFrom = locations.get(i).getLongitude();
+            longitudeTo = locations.get(nextposition).getLongitude();
+            speedTo = locations.get(nextposition).getSpeed();
+
+            polylineList = new ArrayList<>();
 
 
-            int polycolor = polylineColor(speedto);
+            int polycolor = polylineColor(speedTo);
 
-            Polyline polyline = mMap.addPolyline(new PolylineOptions()
+            polyline = mMap.addPolyline(new PolylineOptions()
                     .clickable(true)
                     .add(
-                            new LatLng(latitudefrom, longitudefrom),
-                            new LatLng(latitudeto, longitudeto)
+                            new LatLng(latitudeFrom, longitudeFrom),
+                            new LatLng(latitudeTo, longitudeTo)
+
                     )
                     .color(polycolor)
             );
-
             polyline.setTag("");
         }
     }
@@ -162,7 +173,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
-                    LocationManager.getInstance().stopUsingGPS();
+                    MyLocationManager.getInstance().stopUsingGPS();
                 }
             }, 0, 600000);
         } else {
@@ -171,11 +182,11 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
     }
 
     //sets the polyline color depending on speed
-    private int polylineColor(double speedto) {
+    private int polylineColor(double speedTo) {
         int speedInt;
         int color = 0;
 
-        this.speed = speedto;
+        this.speed = speedTo;
         speedInt = (int) Math.round(speed);
 
         if (speedInt <= 10) {
@@ -189,5 +200,6 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Locati
         }
         return color;
     }
+
 }
 

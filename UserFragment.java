@@ -48,6 +48,7 @@ public class UserFragment extends Fragment {
     private RecyclerView uRecyclerView;
     private RecyclerView.LayoutManager uLayoutManager;
     private ArrayList<User> userList;
+    FloatingActionButton floatingActionButton;
 
 
     private UserFragment.OnFragmentInteractionListener eListener;
@@ -74,15 +75,16 @@ public class UserFragment extends Fragment {
         super.onCreate(savedInstanceState);
         page = getArguments().getInt("someInt", 1);
         title = getArguments().getString("someTitle");
-        FloatingActionButton floatingActionButton = this.getActivity().findViewById(R.id
-                .positionButton);
-        floatingActionButton.setVisibility(View.INVISIBLE);
+  //      floatingActionButton = this.getActivity().findViewById(R.id
+   //             .positionButton);
+//        floatingActionButton.setVisibility(View.INVISIBLE);
     }
 
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.user_fragment, container, false);
+
 
         addUserButton = view.findViewById(R.id.addUserButton);
 
@@ -115,6 +117,12 @@ public class UserFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+
+//        floatingActionButton.setVisibility(View.INVISIBLE);
+    }
 
     public void addUserDialog() {
 
@@ -203,7 +211,9 @@ public class UserFragment extends Fragment {
     public void selectUser(User userForList) {
         int selectUserID = userForList.getId();
         TripManager.getInstance().setSelectedUserID(selectUserID);
-
+        Toast.makeText(getActivity(), (getString(R.string.selectedUser)+selectUserID+" "), Toast
+                .LENGTH_LONG)
+                .show();
     }
 
 

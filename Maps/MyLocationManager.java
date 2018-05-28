@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.widget.Toast;
 
+import com.example.tadje.gpsproject.MapsFragment;
 import com.example.tadje.gpsproject.Persistence.AppDatabase;
 import com.example.tadje.gpsproject.R;
 import com.example.tadje.gpsproject.TripManager;
@@ -26,9 +27,9 @@ import static android.content.Context.LOCATION_SERVICE;
  * Created by tadje on 09.05.2018.
  */
 
-public class LocationManager implements LocationListener {
+public class MyLocationManager implements LocationListener {
 
-    private static LocationManager instance = null;
+    private static MyLocationManager instance = null;
 
     private Context mContext;
     private boolean isGPSEnabled = false;
@@ -43,16 +44,16 @@ public class LocationManager implements LocationListener {
     // The minimum time beetwen updates in milliseconds
     private static final long MIN_TIME_BW_UPDATES = 1000 * 5;
     private android.location.LocationManager locationManager;
-    private List<LocationChangedListener> listeners = new ArrayList<>();
+    private List<ILocationChangedListener> listeners = new ArrayList<>();
 
 
-    public LocationManager() {
+    public MyLocationManager() {
     }
 
 
-    public static LocationManager getInstance() {
+    public static MyLocationManager getInstance() {
         if (instance == null) {
-            instance = new LocationManager();
+            instance = new MyLocationManager();
         }
 
         return instance;
@@ -89,8 +90,8 @@ public class LocationManager implements LocationListener {
                     ActivityCompat.checkSelfPermission(mContext, Manifest.permission
                             .ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 /*
-                String provider = isGPSEnabled ? android.location.LocationManager.GPS_PROVIDER :
-                        android.location.LocationManager.NETWORK_PROVIDER;
+                String provider = isGPSEnabled ? android.location.MyLocationManager.GPS_PROVIDER :
+                        android.location.MyLocationManager.NETWORK_PROVIDER;
                 locationManager.requestLocationUpdates(provider, MIN_TIME_BW_UPDATES,
                 MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
 */
@@ -124,7 +125,7 @@ public class LocationManager implements LocationListener {
 
     public void initializeLocationVariablen(Location location) {
 
-        if (location != null) {
+            if (location != null) {
             latitude = location.getLatitude();
             longitude = location.getLongitude();
             speed = calculateSpeedInKMHour(location);
@@ -167,7 +168,7 @@ public class LocationManager implements LocationListener {
                 return;
             }
             locationManager.removeUpdates(this);
-            locationManager = null;
+            //locationManager = null;
         }
     }
 
@@ -198,14 +199,14 @@ public class LocationManager implements LocationListener {
     }
 
     //register Listener to the listener List
-    public void registerLocationChangedListener(LocationChangedListener locationChangedListener) {
+    public void registerLocationChangedListener(ILocationChangedListener locationChangedListener) {
         if (!listeners.contains(locationChangedListener)) {
             listeners.add(locationChangedListener);
         }
     }
 
     //remove the listener from the listener list
-    public void unregisterLocationChangedListener(LocationChangedListener
+    public void unregisterLocationChangedListener(ILocationChangedListener
                                                          locationChangedListener) {
         if (listeners.contains(locationChangedListener)) {
             listeners.remove(locationChangedListener);
@@ -214,7 +215,7 @@ public class LocationManager implements LocationListener {
 
     //inform the registered listener about the new location
     public void notifyLocationChangedListener(Location location) {
-        for (LocationChangedListener listener : listeners) {
+        for (ILocationChangedListener listener : listeners) {
             listener.onLocationChanged(location);
         }
     }

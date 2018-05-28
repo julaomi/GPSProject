@@ -21,7 +21,7 @@ import android.view.View;
 
 import android.widget.Toast;
 
-import com.example.tadje.gpsproject.Maps.LocationManager;
+import com.example.tadje.gpsproject.Maps.MyLocationManager;
 import com.example.tadje.gpsproject.Persistence.AppDatabase;
 import com.example.tadje.gpsproject.ViewPager.ViewPagerAdapter;
 import com.example.tadje.gpsproject.model.Trip;
@@ -86,17 +86,17 @@ public class MainActivity extends AppCompatActivity implements MapsFragment
         TripManager.getInstance().setTripNumber(1);
 
         if (checkPermission()) {
-            location = LocationManager.getInstance().locationInitialize(context);
-            startTripIfLocationHaveSpeed(location);
-        }
+             startTripIfLocationHaveSpeed(location);
 
-        positionButton = findViewById(R.id.positionButton);
-        positionButton.setOnClickListener((new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startOrStopOnButtonClick();
-            }
-        }));
+        }
+//
+//        positionButton = findViewById(R.id.positionButton);
+//        positionButton.setOnClickListener((new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                startOrStopOnButtonClick();
+//            }
+//        }));
 
     }
 
@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements MapsFragment
         } else {
             buttonStartStop = false;
             Toast.makeText(this, getString(R.string.stopTrip), Toast.LENGTH_LONG).show();
-            LocationManager.getInstance().stopUsingGPS();
+            MyLocationManager.getInstance().stopUsingGPS();
         }
     }
 
@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements MapsFragment
 
         if (existTripList.size() != 0) {
 
-            tripNumber = TripManager.getInstance().getTripNumber();
+            tripNumber = (existTripList.size());
             TripManager.getInstance().setTripNumber(tripNumber + 1);
 
         } else {
@@ -167,7 +167,7 @@ public class MainActivity extends AppCompatActivity implements MapsFragment
         AppDatabase.getInstance().tripDao().insertAll(trip);
 
         // Go in the Location Manager to get a location and fill the location in the database
-        LocationManager.getInstance().locationInitialize(this);
+        MyLocationManager.getInstance().locationInitialize(this);
     }
 
 
